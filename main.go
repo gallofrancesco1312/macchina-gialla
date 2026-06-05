@@ -146,7 +146,9 @@ func main() {
 				senderCount = counts.CountB
 			}
 			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, formatMsg(sender.replyMsg, senderCount)))
-			bot.Send(tgbotapi.NewMessage(other.id, formatMsg(sender.notifyMsg, senderCount))) // V3
+			if _, err := bot.Send(tgbotapi.NewMessage(other.id, formatMsg(sender.notifyMsg, senderCount))); err != nil { // V3
+				log.Printf("notify %s: %v", other.name, err)
+			}
 
 		case msg.IsCommand() && msg.Command() == "count": // I.cmd
 			reply := fmt.Sprintf("%s: %d\n%s: %d", userA.name, counts.CountA, userB.name, counts.CountB)
