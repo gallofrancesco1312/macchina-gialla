@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
@@ -14,41 +15,45 @@ import (
 var allowedIDs [2]int64
 
 type counterStore struct {
-	Count int `json:"count"`
+	CountA int `json:"count_a"`
+	CountB int `json:"count_b"`
+}
+
+type user struct {
+	id      int64
+	name    string
+	replyMsg string
 }
 
 func isAllowed(userID int64) bool {
 	return userID == allowedIDs[0] || userID == allowedIDs[1]
 }
 
-func otherUser(senderID int64) int64 {
-	if senderID == allowedIDs[0] {
-		return allowedIDs[1]
-	}
-	return allowedIDs[0]
-}
-
-func loadCounter(path string) (int, error) {
+func loadCounter(path string) (counterStore, error) {
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return 0, nil
+		return counterStore{}, nil
 	}
 	if err != nil {
-		return 0, err
+		return counterStore{}, err
 	}
 	var s counterStore
 	if err := json.Unmarshal(data, &s); err != nil {
-		return 0, err
+		return counterStore{}, err
 	}
-	return s.Count, nil
+	return s, nil
 }
 
-func saveCounter(path string, count int) error {
-	data, err := json.Marshal(counterStore{Count: count})
+func saveCounter(path string, s counterStore) error {
+	data, err := json.Marshal(s)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(path, data, 0644)
+}
+
+func formatMsg(template string, count int) string {
+	return strings.ReplaceAll(template, "{count}", strconv.Itoa(count))
 }
 
 func mustEnv(key string) string {
@@ -78,11 +83,20 @@ func envOr(key, def string) string {
 func main() {
 	_ = godotenv.Load()
 
-	allowedIDs[0] = mustParseID("USER_A_ID")
-	allowedIDs[1] = mustParseID("USER_B_ID")
-	counterPath := envOr("COUNTER_FILE", "counter.json")
+	userA := user{
+		id:       mustParseID("USER_A_ID"),
+		name:     mustEnv("USER_A_NAME"),
+		replyMsg: mustEnv("MSG_A"),
+	}
+	userB := user{
+		id:       mustParseID("USER_B_ID"),
+		name:     mustEnv("USER_B_NAME"),
+		replyMsg: mustEnv("MSG_B"),
+	}
+	allowedIDs = [2]int64{userA.id, userB.id}
 
-	count, err := loadCounter(counterPath)
+	counterPath := envOr("COUNTER_FILE", "counter.json")
+	counts, err := loadCounter(counterPath)
 	if err != nil {
 		log.Fatalf("load counter: %v", err)
 	}
@@ -91,7 +105,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("bot init: %v", err)
 	}
-	log.Printf("bot started as @%s, counter=%d", bot.Self.UserName, count)
+	log.Printf("bot started as @%s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -107,17 +121,35 @@ func main() {
 			continue
 		}
 
+		var sender, other user
+		if msg.From.ID == userA.id {
+			sender, other = userA, userB
+		} else {
+			sender, other = userB, userA
+		}
+
 		switch {
-		case msg.Photo != nil: // V2
-			count++
-			if err := saveCounter(counterPath, count); err != nil { // V4
+		case msg.Photo != nil: // V2, V6
+			if sender.id == userA.id {
+				counts.CountA++
+			} else {
+				counts.CountB++
+			}
+			if err := saveCounter(counterPath, counts); err != nil { // V4
 				log.Printf("save counter: %v", err)
 			}
-			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("Macchina gialla! Totale: %d 🟡", count)))
-			bot.Send(tgbotapi.NewMessage(otherUser(msg.From.ID), fmt.Sprintf("Macchina gialla avvistata! Totale: %d 🟡", count))) // V3
+			senderCount := counts.CountA
+			if sender.id == userB.id {
+				senderCount = counts.CountB
+			}
+			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, formatMsg(sender.replyMsg, senderCount)))
+			// V3: notify other user
+			notification := fmt.Sprintf("%s ha avvistato una macchina gialla! (suo totale: %d)", sender.name, senderCount)
+			bot.Send(tgbotapi.NewMessage(other.id, notification))
 
 		case msg.IsCommand() && msg.Command() == "count": // I.cmd
-			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("Macchine gialle avvistate: %d 🟡", count)))
+			reply := fmt.Sprintf("%s: %d\n%s: %d", userA.name, counts.CountA, userB.name, counts.CountB)
+			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, reply))
 		}
 	}
 }
