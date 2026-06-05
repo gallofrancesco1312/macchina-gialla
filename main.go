@@ -146,7 +146,9 @@ func main() {
 				senderCount = counts.CountB
 			}
 			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, formatMsg(sender.replyMsg, senderCount)))
-			if _, err := bot.Send(tgbotapi.NewMessage(other.id, formatMsg(sender.notifyMsg, senderCount))); err != nil { // V3
+			photoNotif := tgbotapi.NewPhoto(other.id, tgbotapi.FileID(msg.Photo[len(msg.Photo)-1].FileID))
+			photoNotif.Caption = formatMsg(sender.notifyMsg, senderCount)
+			if _, err := bot.Send(photoNotif); err != nil { // V3
 				log.Printf("notify %s: %v", other.name, err)
 			}
 
