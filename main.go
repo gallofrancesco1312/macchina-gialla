@@ -46,11 +46,11 @@ func loadCounter(path string) (counterStore, error) {
 }
 
 func saveCounter(path string, s counterStore) error {
-	data, err := json.Marshal(s)
+	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, append(data, '\n'), 0644)
 }
 
 func formatMsg(template string, count int) string {
