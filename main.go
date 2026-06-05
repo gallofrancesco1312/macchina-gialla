@@ -133,6 +133,7 @@ func main() {
 
 		switch {
 		case msg.Photo != nil: // V2, V6
+			log.Printf("photo from %s, caption=%q", sender.name, msg.Caption)
 			if sender.id == userA.id {
 				counts.CountA++
 			} else {
