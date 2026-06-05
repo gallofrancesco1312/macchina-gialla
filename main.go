@@ -20,9 +20,10 @@ type counterStore struct {
 }
 
 type user struct {
-	id      int64
-	name    string
-	replyMsg string
+	id        int64
+	name      string
+	replyMsg  string
+	notifyMsg string
 }
 
 func isAllowed(userID int64) bool {
@@ -84,14 +85,16 @@ func main() {
 	_ = godotenv.Load()
 
 	userA := user{
-		id:       mustParseID("USER_A_ID"),
-		name:     mustEnv("USER_A_NAME"),
-		replyMsg: mustEnv("MSG_A"),
+		id:        mustParseID("USER_A_ID"),
+		name:      mustEnv("USER_A_NAME"),
+		replyMsg:  mustEnv("MSG_A"),
+		notifyMsg: mustEnv("NOTIFY_A"),
 	}
 	userB := user{
-		id:       mustParseID("USER_B_ID"),
-		name:     mustEnv("USER_B_NAME"),
-		replyMsg: mustEnv("MSG_B"),
+		id:        mustParseID("USER_B_ID"),
+		name:      mustEnv("USER_B_NAME"),
+		replyMsg:  mustEnv("MSG_B"),
+		notifyMsg: mustEnv("NOTIFY_B"),
 	}
 	allowedIDs = [2]int64{userA.id, userB.id}
 
@@ -143,9 +146,7 @@ func main() {
 				senderCount = counts.CountB
 			}
 			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, formatMsg(sender.replyMsg, senderCount)))
-			// V3: notify other user
-			notification := fmt.Sprintf("%s ha avvistato una macchina gialla! (suo totale: %d)", sender.name, senderCount)
-			bot.Send(tgbotapi.NewMessage(other.id, notification))
+			bot.Send(tgbotapi.NewMessage(other.id, formatMsg(sender.notifyMsg, senderCount))) // V3
 
 		case msg.IsCommand() && msg.Command() == "count": // I.cmd
 			reply := fmt.Sprintf("%s: %d\n%s: %d", userA.name, counts.CountA, userB.name, counts.CountB)
