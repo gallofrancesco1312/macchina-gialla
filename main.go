@@ -147,7 +147,11 @@ func main() {
 			}
 			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, formatMsg(sender.replyMsg, senderCount)))
 			photoNotif := tgbotapi.NewPhoto(other.id, tgbotapi.FileID(msg.Photo[len(msg.Photo)-1].FileID))
-			photoNotif.Caption = formatMsg(sender.notifyMsg, senderCount)
+			caption := formatMsg(sender.notifyMsg, senderCount)
+			if msg.Caption != "" {
+				caption += "\n" + msg.Caption
+			}
+			photoNotif.Caption = caption
 			if _, err := bot.Send(photoNotif); err != nil { // V3
 				log.Printf("notify %s: %v", other.name, err)
 			}
