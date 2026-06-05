@@ -42,6 +42,25 @@ go build -o macchina-gialla
 ./macchina-gialla
 ```
 
+## Docker
+
+```bash
+# build immagine
+make build
+
+# avvia il bot
+make run
+```
+
+oppure manualmente:
+
+```bash
+docker build -t macchina-gialla .
+docker run --env-file .env -v $(pwd)/counter.json:/app/counter.json macchina-gialla
+```
+
+Il volume su `counter.json` persiste i counter fuori dal container.
+
 ## Comandi disponibili
 
 | Comando  | Descrizione                              |
