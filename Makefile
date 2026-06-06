@@ -24,7 +24,8 @@ run:
 test:
 	go test ./...
 
-deploy: build
+deploy:
+	docker pull $(REGISTRY):$(TAG)
 	docker stop $(IMAGE) 2>/dev/null || true
 	docker rm   $(IMAGE) 2>/dev/null || true
 	docker run -d \
@@ -32,4 +33,4 @@ deploy: build
 		--restart unless-stopped \
 		--env-file $(DEPLOY_DIR)/.env \
 		-v $(DEPLOY_DIR)/counter.json:/app/counter.json \
-		$(IMAGE)
+		$(REGISTRY):$(TAG)

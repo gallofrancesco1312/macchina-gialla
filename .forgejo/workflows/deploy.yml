@@ -23,5 +23,7 @@ jobs:
     - name: Build and push
       run: make push
 
-    - name: Deploy
-      run: make deploy
+    - name: Trigger host deploy
+      run: |
+        curl -fsS -k -X POST https://deploy.home.potato/hooks/deploy-macchina-gialla \
+          -H "X-Deploy-Token: ${{ secrets.DEPLOY_TOKEN }}"
