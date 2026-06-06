@@ -1,10 +1,22 @@
-IMAGE      := macchina-gialla
-DEPLOY_DIR := /opt/macchina-gialla
+IMAGE          := macchina-gialla
+REGISTRY_HOST  := forgejo.home.patato
+REGISTRY_USER  ?= ciccio
+REGISTRY_TOKEN ?=
+REGISTRY       := $(REGISTRY_HOST)/ciccio/macchina-gialla
+TAG            := latest
+DEPLOY_DIR := /opt/services/macchina-gialla
 
-.PHONY: build run test deploy
+.PHONY: build run test deploy push login
+
+login:
+	@echo "$(REGISTRY_TOKEN)" | docker login $(REGISTRY_HOST) -u $(REGISTRY_USER) --password-stdin
 
 build:
 	docker build -t $(IMAGE) .
+
+push: build
+	docker tag $(IMAGE) $(REGISTRY):$(TAG)
+	docker push $(REGISTRY):$(TAG)
 
 run:
 	docker run --env-file .env -v $(PWD)/counter.json:/app/counter.json $(IMAGE)

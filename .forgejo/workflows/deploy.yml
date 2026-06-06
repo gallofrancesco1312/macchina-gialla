@@ -15,5 +15,13 @@ jobs:
       with:
         server_url: https://forgejo.home.potato
 
+    - name: Login to registry
+      run: make login
+      env:
+        REGISTRY_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+
+    - name: Build and push
+      run: make push
+
     - name: Deploy
       run: make deploy
