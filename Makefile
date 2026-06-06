@@ -1,5 +1,5 @@
 IMAGE          := macchina-gialla
-REGISTRY_HOST  := forgejo.home.patato
+REGISTRY_HOST  := forgejo.home.potato
 REGISTRY_USER  ?= ciccio
 REGISTRY_TOKEN ?=
 REGISTRY       := $(REGISTRY_HOST)/ciccio/macchina-gialla
